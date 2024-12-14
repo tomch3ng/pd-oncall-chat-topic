@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  ChatTopicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: main.handler
+      Runtime: python3.8
+      CodeUri: ./lambda
+      Layers:
+        - arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python-AWS-SDK:4
+      Environment:
+        Variables:
+          PD_API_KEY_NAME: pagerduty-oncall-chat-topic
+          SLACK_API_KEY_NAME: pagerduty-oncall-chat-topic-slack
+          CONFIG_TABLE: pagerduty-oncall-chat-topic-ConfigTable-EY9OCADK2703
+      Timeout: 30

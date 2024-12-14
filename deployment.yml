@@ -25,6 +25,16 @@ Outputs:
     Value: !GetAtt ConfigTable.Arn
 
 Resources:
+  # Secrets Manager Secret
+  ApiKeys:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: "pagerduty-oncall-chat-topic"
+      Description: "PagerDuty and Slack API Keys for pd-oncall-chat-topic integration"
+      Tags:
+        - Key: Purpose
+          Value: API Key Storage
+
   ChatTopicRole:
     Type: AWS::IAM::Role
     Properties:
@@ -42,26 +52,13 @@ Resources:
             - sts:AssumeRole
       Path: "/cfn/"
       Policies:
-      - PolicyName: SSM
+      - PolicyName: ChatTopicPolicy
         PolicyDocument:
           Statement:
           - Effect: Allow
             Action:
-            - ssm:GetParameters
-            Resource:
-            - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${PDSSMKeyName}"
-            - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SlackSSMKeyName}"
-      - PolicyName: KMS
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - kms:Decrypt
-            Resource:
-            - !Ref SSMKeyArn
-      - PolicyName: DDB
-        PolicyDocument:
-          Statement:
+            - secretsmanager:GetSecretValue
+            Resource: !GetAtt ApiKeys.Id
           - Effect: Allow
             Action:
             - dynamodb:scan
@@ -96,7 +93,7 @@ Resources:
         Bucket: !Ref Bucket
         Key: !Ref md5
       Layers:
-        - arn:aws:lambda:ca-central-1:778625758767:layer:AWSLambda-Python-AWS-SDK:4 # for ca-central-1 region
+        - arn:aws:lambda:us-east-1:668099181075:layer:AWSLambda-Python-AWS-SDK:4
       Environment:
         Variables:
           PD_API_KEY_NAME: !Ref PDSSMKeyName

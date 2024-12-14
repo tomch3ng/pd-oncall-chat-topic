@@ -1,8 +1,8 @@
 STACKNAME_BASE=pagerduty-oncall-chat-topic
 # if REGION is changed, use table in https://aws.amazon.com/blogs/compute/upcoming-changes-to-the-python-sdk-in-aws-lambda/ to update ChatTopicFunction lambda layer value
-REGION="ca-central-1"
+REGION="us-east-1"
 # Bucket in REGION that is used for deployment (`pd-oncall-chat-topic` is already used)
-BUCKET=$(STACKNAME_BASE)
+BUCKET=tomcheng-lambda-deploy
 SSMKeyArn=$(shell aws kms --region $(REGION) describe-key --key-id alias/aws/ssm --query KeyMetadata.Arn)
 MD5=$(shell md5sum lambda/*.py | md5sum | cut -d ' ' -f 1)
 

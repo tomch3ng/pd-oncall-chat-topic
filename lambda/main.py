@@ -21,10 +21,10 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 # Fetch the PD API token from PD_API_KEY_NAME key in SSM
-PD_API_KEY = boto3.client('ssm').get_parameters(
-    Names=[os.environ['PD_API_KEY_NAME']],
-    WithDecryption=True)['Parameters'][0]['Value']
-
+secret_json = boto3.client('secretsmanager').get_secret_value(
+    SecretId=os.environ['PD_API_KEY_NAME'])
+secret = json.loads(secret_json['SecretString'])
+PD_API_KEY = secret[os.environ['PD_API_KEY_NAME']]
 
 # Get the Current User on-call for a given schedule
 def get_user(schedule_id):
@@ -90,12 +90,9 @@ def get_pd_schedule_name(schedule_id):
         logger.debug(r)
         return None
 
-
 def get_slack_topic(channel):
     payload = {}
-    payload['token'] = boto3.client('ssm').get_parameters(
-        Names=[os.environ['SLACK_API_KEY_NAME']],
-        WithDecryption=True)['Parameters'][0]['Value']
+    payload['token'] = secret[os.environ['SLACK_API_KEY_NAME']]
     payload['channel'] = channel
     try:
         response = http.request('POST', 'https://slack.com/api/conversations.info', fields=payload)
@@ -114,9 +111,7 @@ def update_slack_topic(channel, proposed_update):
         proposed_update)
     )
     payload = {}
-    payload['token'] = boto3.client('ssm').get_parameters(
-        Names=[os.environ['SLACK_API_KEY_NAME']],
-        WithDecryption=True)['Parameters'][0]['Value']
+    payload['token'] = secret[os.environ['SLACK_API_KEY_NAME']]
     payload['channel'] = channel
 
     # This is tricky to get correct for all the edge cases
