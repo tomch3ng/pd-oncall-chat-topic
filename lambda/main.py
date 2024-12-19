@@ -36,9 +36,6 @@ def get_user(schedule_id):
     normal_url = 'https://api.pagerduty.com/schedules/{0}/users'.format(
         schedule_id
     )
-    override_url = 'https://api.pagerduty.com/schedules/{0}/overrides'.format(
-        schedule_id
-    )
     # This value should be less than the running interval
     # It is best to use UTC for the datetime object
     now = datetime.now(timezone.utc)
@@ -53,17 +50,7 @@ def get_user(schedule_id):
         return False
     normal = json.loads(body)
     try:
-        username = normal['users'][0]['name']
-        # Check for overrides
-        # If there is *any* override, then the above username is an override
-        # over the normal schedule. The problem must be approached this way
-        # because the /overrides endpoint does not guarentee an order of the
-        # output.
-        override_response = http.request('GET', override_url, headers=headers, fields=payload)
-        body = override_response.data.decode('utf-8')
-        override = json.loads(body)
-        if override['overrides']:  # is not empty list
-            username = username + " (Override)"
+        username = normal['users'][0]['email']
     except IndexError:
         username = "No One :thisisfine:"
     except KeyError:
@@ -166,6 +153,27 @@ def update_slack_topic(channel, proposed_update):
         logger.info("Not updating slack, topic is the same")
         return None
 
+def get_slack_username(email):
+    headers = {}
+    headers['Authorization'] = "Bearer " + secret[os.environ['SLACK_API_KEY_NAME']]
+
+    payload = {}
+    payload['email'] = email
+
+    username = ""
+
+    try:
+        response = http.request('GET', 'https://slack.com/api/users.lookupByEmail', fields=payload, headers=headers)
+        body = response.data.decode('utf-8')
+        r = json.loads(body)
+        if r['ok']:
+            username = r['user']['id']
+            logger.debug("User ID: '{}'".format(username))
+        else:
+            logger.critical("Error getting user ID from Slack API: {}".format(r['error']))
+    except KeyError:
+        logger.critical("Could not find user with email address '{}' on slack.".format(email))
+    return username
 
 def figure_out_schedule(s):
     # Purpose here is to find the schedule id if given a human readable name
@@ -205,7 +213,8 @@ def do_work(obj):
         schedule = figure_out_schedule(schedule)
 
         if schedule:
-            username = get_user(schedule)
+            email = get_user(schedule)
+            username = get_slack_username(email)
         else:
             logger.critical("Exiting: Schedule not found or not valid, see previous errors")
             return 127
@@ -223,7 +232,7 @@ def do_work(obj):
             if i != 0:
                 topic += ", "
             topic += "{} is on-call for {}".format(
-                user,
+                "<@{}>".format(user),
                 oncall_dict[user]
             )
             i += 1
