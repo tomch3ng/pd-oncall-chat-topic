@@ -1,7 +1,12 @@
 # pd-oncall-chat-topic
 AWS Lambda Function that updates a Chat Room topic (eg, Slack)
 
-![Screenshot](https://raw.githubusercontent.com/PagerDuty/pd-oncall-chat-topic/master/screenshot.png)
+This fork of [PagerDuty/pd-oncall-chat-topic](https://github.com/PagerDuty/pd-oncall-chat-topic) contains a couple of changes/enhancements:
+1. Secrets are stored in Secrets Manager instead of SSM Parameter Store
+2. The on-call engineer's Slack handle is displayed in the topic instead of their name
+
+
+![Screenshot](https://raw.githubusercontent.com/tomch3ng/pd-oncall-chat-topic/master/screenshot.png)
 
 
 ## Motivation
@@ -22,14 +27,14 @@ employees to build and present projects or ideas that fulfill some kind of need
 at the company.
 
 ## How to Deploy
-1. Create an Integrated Bot that you can invite to your channel. https://my.slack.com/services/new/bot
+1. Create a Modern Slack App with a Bot User OAuth Token. https://api.slack.com/apps/
 2. Obtain a PagerDuty API Key (v2) [Directions Here](https://support.pagerduty.com/docs/using-the-api#section-generating-an-api-key)
 3. Deploy CloudFormation
   - Clone repo
   - Modify 2 variables for your AWS Environment
-    ([Makefile#L1-L2](https://github.com/PagerDuty/pd-oncall-chat-topic/blob/master/Makefile#L1-L2))
+    ([Makefile#L1-L2](https://github.com/tomch3ng/pd-oncall-chat-topic/blob/master/Makefile#L1-L2))
   - `make deploy`
-4. Write API Keys to EC2 SSM Parameter Store.
+4. Write API Keys to Secrets Manager.
   - The lambda function expects certain key names by default so the following
     commands should work unless modified elsewhere (advanced config).
   - `make put-pd-key`
@@ -49,15 +54,15 @@ at the company.
   (where `schedule` is the PagerDuty Schedule ID, and `slack` is the Slack
   Channel ID. You can have a space-separated list of channels. `sched_name` is optional and if omitted will be looked up)
   If you have a split on-call rotation, you may place multiple comma-separated schedules and schedule names.
-  
+
 
 ## Architecture
 The main part of this infrastructure is an AWS Lambda Function that operates on
 a schedule (cron), reads configuration information from an DynamoDB Table and
-secrets from AWS EC2 Parameter Store. This is all deployed from a AWS
+secrets from AWS Secrets Manager. This is all deployed from a AWS
 CloudFormation template.
 
-![Architecture Diagram](https://raw.githubusercontent.com/PagerDuty/pd-oncall-chat-topic/master/diagram.png)
+![Architecture Diagram](https://raw.githubusercontent.com/tomch3ng/pd-oncall-chat-topic/master/diagram.png)
 
 ## Cost
 The way that this Lambda Function is configured, is to run on a schedule every 5
